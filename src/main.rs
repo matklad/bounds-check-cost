@@ -20,13 +20,16 @@ fn main() {
     let r3 = run_benchmark("sum", || sum(&xs, 0, N_IDX));
     let r4 = run_benchmark("sum_unchecked", || sum_unchecked(&xs, 0, N_IDX));
 
-    assert!(r1 == r2 && r2 == r3 && r3 == r4);
+    let r5 = run_benchmark("sum_hoisted_checks", || sum_hoisted_checks(&xs, 0, N_IDX));
+    let r6 = run_benchmark("sum_iter_sum", || sum_iter_sum(&xs, 0, N_IDX));
+
+    assert!(r1 == r2 && r2 == r3 && r3 == r4 && r4 == r5 && r5 == r6);
 }
 
 #[inline(never)]
 fn run_benchmark<F: Fn() -> T, T>(name: &str, f: F) -> Vec<T> {
     println!("{}:", name);
-    let n = 50;
+    let n = 300;
     let mut res = Vec::with_capacity(n);
     let mut times = Vec::with_capacity(n);
     for _ in 0..n {
@@ -79,3 +82,22 @@ fn sum_unchecked(xs: &[u32], lo: usize, hi: usize) -> u32 {
     }
     sum
 }
+
+#[inline(never)]
+fn sum_hoisted_checks(xs: &[u32], lo: usize, hi: usize) -> u32 {
+    let mut sum = 0u32;
+    for &x in &xs[lo..hi] {
+        sum = sum.wrapping_add(x);
+    }
+    sum
+}
+
+
+#[inline(never)]
+fn sum_iter_sum(xs: &[u32], lo: usize, hi: usize) -> u32 {
+    xs[lo..hi].iter()
+        .map(|&x| std::num::Wrapping(x))
+        .sum::<std::num::Wrapping<u32>>()
+        .0
+}
+
